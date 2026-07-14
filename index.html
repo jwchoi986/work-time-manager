@@ -623,7 +623,8 @@ function updateCountdown() {
   const diffMs = target - now;
 
   if (diffMs <= 0) {
-    timeEl.textContent = '🎉 퇴근 시간이에요!';
+    const overdueMinutes = Math.floor(-diffMs / 60000);
+    timeEl.textContent = overdueMinutes >= 5 ? `퇴근시간이 ${overdueMinutes}분 지났습니다` : '🎉 퇴근 시간이에요!';
   } else {
     const totalSeconds = Math.floor(diffMs / 1000);
     const hh = Math.floor(totalSeconds / 3600);
