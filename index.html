@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출퇴근 시간 관리 도우미</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --muted-strong: #454c56;
+    --accent: #4f46e5;
+    --border: #e5e7eb;
+    --danger: #ef4444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14151a;
+      --card: #1f2128;
+      --text: #f2f2f2;
+      --muted: #9aa0aa;
+      --muted-strong: #c2c7d0;
+      --accent: #818cf8;
+      --border: #2e313a;
+      --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+    padding: 24px;
+  }
+  .page {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .page-title {
+    width: 100%;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+    color: #ffffff;
+    background: var(--accent);
+    padding: 18px 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  .quote-panel {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    padding-top: 34px;
+    padding-right: 24px;
+    padding-bottom: 20px;
+    padding-left: 190px;
+    background-image: url('https://i.pinimg.com/736x/52/87/5c/52875cd600de977568c5be9178337293.jpg');
+    background-repeat: no-repeat;
+    background-position: 30px center;
+    background-size: auto 70%;
+  }
+  .quote-decor {
+    text-align: right;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    opacity: 0.55;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    pointer-events: none;
+  }
+  .quote-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: var(--accent);
+  }
+  .page-quote {
+    width: 100%;
+    margin: 0;
+    text-align: right;
+    color: var(--muted-strong);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .quote-input {
+    display: none;
+    width: 100%;
+    min-height: 60px;
+    resize: vertical;
+    text-align: right;
+    color: var(--text);
+    background: transparent;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+  .quote-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 6px;
+  }
+  .quote-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    opacity: 0.65;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .quote-btn:hover { color: var(--accent); opacity: 1; }
+  .layout {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .panel {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  .right-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .history {
+    width: 240px;
+    flex-shrink: 0;
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .history h2 {
+    font-size: 16px;
+    margin: 0 0 2px;
+    text-align: center;
+  }
+  .history .sub {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .history-list {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .history-empty {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px 0;
+  }
+  .history-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .history-item .info .date {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .history-item .info .times {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .history-item .info .times .arrow {
+    color: var(--muted);
+    font-weight: 400;
+    margin: 0 4px;
+  }
+  .history-item .del {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .history-item .del:hover { color: var(--danger); }
+  .history-item.editing {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .history-item.editing input[type="date"],
+  .history-item.editing input[type="time"],
+  .add-form input[type="date"],
+  .add-form input[type="time"] {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+  .add-form {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .add-form.show { display: flex; }
+  .add-form-title {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .add-form button {
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .edit-btn {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .edit-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .card {
+    padding: 24px 40px;
+  }
+  .card-title {
+    font-size: 20px;
+    margin: 0 0 12px;
+    text-align: center;
+  }
+  p.sub {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input[type="time"] {
+    width: 100%;
+    font-size: 18px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .row > div { flex: 1; }
+  input[type="number"] {
+    width: 100%;
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+  button.secondary {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .result {
+    margin-top: 4px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .result .time {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+    margin: 12px 0 0;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width 0.6s ease;
+  }
+  .result .note {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .button-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .button-row .secondary {
+    flex: 1;
+    width: auto;
+    margin-top: 0;
+  }
+  .work-settings {
+    display: none;
+  }
+  .work-settings.show {
+    display: flex;
+  }
+  @media (max-width: 720px) {
+    .layout { flex-direction: column; }
+    .history { width: 100%; height: 300px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <h1 class="page-title">출퇴근 시간 관리 도우미</h1>
+    <div class="layout">
+      <div class="panel history">
+        <h2>출퇴근 기록</h2>
+        <p class="sub">지금까지 저장한 출근-퇴근 기록이에요</p>
+        <div class="history-list" id="historyList"></div>
+        <div class="add-form" id="addForm">
+          <div class="add-form-title">지난 기록 추가하기</div>
+          <input type="date" id="addDate">
+          <div class="edit-row">
+            <input type="time" id="addClockIn">
+            <input type="time" id="addClockOut">
+          </div>
+          <button type="button" onclick="addRecord()">추가하기</button>
+        </div>
+        <button class="edit-btn" id="editBtn" onclick="toggleEditMode()">기록 수정</button>
+      </div>
+
+      <div class="right-column">
+      <div class="panel card">
+        <h2 class="card-title">퇴근까지 남은 시간</h2>
+
+      <div class="result" id="result">
+        <div class="time" id="countdown">-</div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="note" id="countdownNote"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="clockIn">출근시간</label>
+          <input type="time" id="clockIn" value="09:00">
+        </div>
+        <div>
+          <label for="clockOut">퇴근시간</label>
+          <input type="time" id="clockOut" value="18:00">
+        </div>
+      </div>
+
+      <div class="row work-settings" id="workSettings">
+        <div>
+          <label for="workHours">근무시간(h)</label>
+          <input type="number" id="workHours" value="8" min="0" step="0.5">
+        </div>
+        <div>
+          <label for="breakMinutes">휴게시간(분)</label>
+          <input type="number" id="breakMinutes" value="60" min="0" step="5">
+        </div>
+      </div>
+
+        <div class="button-row">
+          <button type="button" class="secondary" id="workSettingsToggle" onclick="toggleWorkSettings()">근무시간 수정하기</button>
+          <button type="button" class="secondary" id="saveBtn" onclick="saveRecord()">이 기록 저장하기</button>
+        </div>
+      </div>
+
+      <div class="panel quote-panel">
+        <div class="quote-decor">.・。.・゜✭・.・✫・゜・。.</div>
+        <p class="page-quote" id="quoteText"></p>
+        <textarea class="quote-input" id="quoteInput"></textarea>
+        <div class="quote-actions">
+          <button type="button" class="quote-btn" id="quoteEditBtn" onclick="toggleQuoteEdit()">오늘의 마음가짐 변경하기</button>
+          <button type="button" class="quote-btn" onclick="resetQuote()">기본 문구로 설정</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const STORAGE_KEY = 'workTimeHistory';
+const QUOTE_KEY = 'workTimeQuote';
+const DEFAULT_QUOTE = '인생은 나에게 주어진 벌이 아니다. 벌 받듯이 살지 말자.\n나에게 주어진 모든 것들은 내가 해야겠다고 선택한 자유이다.';
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function getQuote() {
+  return localStorage.getItem(QUOTE_KEY) || DEFAULT_QUOTE;
+}
+
+function renderQuote() {
+  document.getElementById('quoteText').innerHTML = getQuote().split('\n').map(escapeHtml).join('<br>');
+}
+
+let quoteEditing = false;
+
+function toggleQuoteEdit() {
+  quoteEditing = !quoteEditing;
+  const textEl = document.getElementById('quoteText');
+  const inputEl = document.getElementById('quoteInput');
+  const btn = document.getElementById('quoteEditBtn');
+
+  if (quoteEditing) {
+    inputEl.value = getQuote();
+    textEl.style.display = 'none';
+    inputEl.style.display = 'block';
+    btn.textContent = '저장하기';
+  } else {
+    localStorage.setItem(QUOTE_KEY, inputEl.value);
+    renderQuote();
+    textEl.style.display = 'block';
+    inputEl.style.display = 'none';
+    btn.textContent = '오늘의 마음가짐 변경하기';
+  }
+}
+
+function resetQuote() {
+  localStorage.removeItem(QUOTE_KEY);
+  quoteEditing = false;
+  document.getElementById('quoteText').style.display = 'block';
+  document.getElementById('quoteInput').style.display = 'none';
+  document.getElementById('quoteEditBtn').textContent = '오늘의 마음가짐 변경하기';
+  renderQuote();
+}
+
+function timeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(totalMinutes) {
+  const h = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+}
+
+function toIsoDate(record) {
+  return record.dateIso || (record.date || '').replace(/\./g, '-');
+}
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function formatDateLabel(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const weekday = WEEKDAYS[new Date(y, m - 1, d).getDay()];
+  return `${isoDate.replace(/-/g, '.')} (${weekday})`;
+}
+
+let workSettingsOpen = false;
+
+function toggleWorkSettings() {
+  workSettingsOpen = !workSettingsOpen;
+  document.getElementById('workSettings').classList.toggle('show', workSettingsOpen);
+  document.getElementById('workSettingsToggle').textContent = workSettingsOpen ? '근무시간 설정 닫기' : '근무시간 수정하기';
+  syncHistoryHeight();
+}
+
+function recalcClockOut() {
+  const clockIn = document.getElementById('clockIn').value;
+  const workHours = parseFloat(document.getElementById('workHours').value) || 0;
+  const breakMinutes = parseFloat(document.getElementById('breakMinutes').value) || 0;
+  if (!clockIn) return;
+  const totalMinutes = timeToMinutes(clockIn) + Math.round(workHours * 60) + breakMinutes;
+  document.getElementById('clockOut').value = minutesToTime(totalMinutes);
+  updateCountdown();
+}
+
+function getClockOutTarget() {
+  const clockIn = document.getElementById('clockIn').value;
+  const clockOut = document.getElementById('clockOut').value;
+  if (!clockIn || !clockOut) return null;
+
+  const inMinutes = timeToMinutes(clockIn);
+  const outMinutes = timeToMinutes(clockOut);
+  const nextDay = outMinutes <= inMinutes;
+
+  const now = new Date();
+  const [outH, outM] = clockOut.split(':').map(Number);
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), outH, outM, 0, 0);
+  if (nextDay) target.setDate(target.getDate() + 1);
+
+  return { target, nextDay, clockOut };
+}
+
+function updateCountdown() {
+  const info = getClockOutTarget();
+  const timeEl = document.getElementById('countdown');
+  const noteEl = document.getElementById('countdownNote');
+  const fillEl = document.getElementById('progressFill');
+  const clockIn = document.getElementById('clockIn').value;
+
+  if (!info || !clockIn) {
+    timeEl.textContent = '-';
+    noteEl.textContent = '출근시간과 퇴근시간을 입력해 주세요';
+    fillEl.style.width = '0%';
+    return;
+  }
+
+  const { target, nextDay, clockOut } = info;
+  const now = new Date();
+  const diffMs = target - now;
+
+  if (diffMs <= 0) {
+    timeEl.textContent = '🎉 퇴근 시간이에요!';
+  } else {
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hh = Math.floor(totalSeconds / 3600);
+    const mm = Math.floor((totalSeconds % 3600) / 60);
+    timeEl.textContent = hh === 0 ? `${mm}분 남음` : `${hh}시간 ${mm}분 남음`;
+  }
+  noteEl.textContent = `퇴근시간 ${clockOut}${nextDay ? ' (다음날)' : ''} 기준`;
+
+  const [inH, inM] = clockIn.split(':').map(Number);
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inH, inM, 0, 0);
+  const totalMs = target - start;
+  const elapsedMs = now - start;
+  const percent = totalMs > 0 ? Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100)) : 100;
+  fillEl.style.width = percent + '%';
+}
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveHistory(records) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function saveRecord() {
+  const clockIn = document.getElementById('clockIn').value;
+  const info = getClockOutTarget();
+  if (!clockIn || !info) return;
+
+  const records = loadHistory();
+  records.unshift({
+    id: new Date().getTime(),
+    dateIso: todayIso(),
+    clockIn,
+    clockOut: info.clockOut,
+    nextDay: info.nextDay,
+  });
+  saveHistory(records);
+  renderHistory();
+}
+
+function deleteRecord(id) {
+  const records = loadHistory().filter(r => r.id !== id);
+  saveHistory(records);
+  renderHistory();
+}
+
+function addRecord() {
+  const dateIso = document.getElementById('addDate').value;
+  const clockIn = document.getElementById('addClockIn').value;
+  const clockOut = document.getElementById('addClockOut').value;
+  if (!dateIso || !clockIn || !clockOut) return;
+
+  const records = loadHistory();
+  records.unshift({
+    id: new Date().getTime(),
+    dateIso,
+    clockIn,
+    clockOut,
+    nextDay: timeToMinutes(clockOut) <= timeToMinutes(clockIn),
+  });
+  saveHistory(records);
+
+  document.getElementById('addDate').value = '';
+  document.getElementById('addClockIn').value = '';
+  document.getElementById('addClockOut').value = '';
+  renderHistory();
+}
+
+function updateRecordField(id, field, value) {
+  const records = loadHistory();
+  const record = records.find(r => r.id === id);
+  if (!record) return;
+
+  record[field] = value;
+  if (field === 'clockIn' || field === 'clockOut') {
+    record.nextDay = timeToMinutes(record.clockOut) <= timeToMinutes(record.clockIn);
+  }
+  saveHistory(records);
+}
+
+let editMode = false;
+
+function toggleEditMode() {
+  editMode = !editMode;
+  document.getElementById('editBtn').textContent = editMode ? '수정 완료' : '기록 수정';
+  document.getElementById('editBtn').classList.toggle('active', editMode);
+  document.getElementById('addForm').classList.toggle('show', editMode);
+  if (editMode) document.getElementById('addDate').value = todayIso();
+  renderHistory();
+}
+
+function renderHistory() {
+  const records = loadHistory();
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+
+  if (records.length === 0) {
+    list.innerHTML = '<div class="history-empty">아직 저장된 기록이 없어요</div>';
+    return;
+  }
+
+  records.forEach(r => {
+    const item = document.createElement('div');
+    const dateIso = toIsoDate(r);
+
+    if (editMode) {
+      item.className = 'history-item editing';
+      item.innerHTML = `
+        <div class="edit-row">
+          <input type="date" class="edit-date" value="${dateIso}">
+          <button class="del" title="삭제">&times;</button>
+        </div>
+        <div class="edit-row">
+          <input type="time" class="edit-in" value="${r.clockIn}">
+          <input type="time" class="edit-out" value="${r.clockOut}">
+        </div>
+      `;
+      item.querySelector('.edit-date').addEventListener('change', e => updateRecordField(r.id, 'dateIso', e.target.value));
+      item.querySelector('.edit-in').addEventListener('change', e => updateRecordField(r.id, 'clockIn', e.target.value));
+      item.querySelector('.edit-out').addEventListener('change', e => updateRecordField(r.id, 'clockOut', e.target.value));
+    } else {
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="info">
+          <div class="date">${formatDateLabel(dateIso)}</div>
+          <div class="times">${r.clockIn}<span class="arrow">→</span>${r.clockOut}${r.nextDay ? ' (다음날)' : ''}</div>
+        </div>
+        <button class="del" title="삭제">&times;</button>
+      `;
+    }
+    item.querySelector('.del').addEventListener('click', () => deleteRecord(r.id));
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('clockIn').addEventListener('change', () => { recalcClockOut(); });
+document.getElementById('workHours').addEventListener('change', () => { recalcClockOut(); });
+document.getElementById('breakMinutes').addEventListener('change', () => { recalcClockOut(); });
+document.getElementById('clockOut').addEventListener('change', updateCountdown);
+
+function syncHistoryHeight() {
+  const rightColumn = document.querySelector('.right-column');
+  const history = document.querySelector('.history');
+  if (window.innerWidth <= 720) {
+    history.style.height = '';
+    return;
+  }
+  history.style.height = rightColumn.offsetHeight + 'px';
+}
+
+new ResizeObserver(syncHistoryHeight).observe(document.querySelector('.right-column'));
+window.addEventListener('resize', syncHistoryHeight);
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+renderHistory();
+renderQuote();
+syncHistoryHeight();
+</script>
+</body>
+</html>
