@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마음가짐 기록장 - 오늘의 인턴 다이어리</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<script src="diary.js"></script>
+<script src="mindset.js"></script>
+<script src="transition.js" defer></script>
+<style>
+  .page-title {
+    background: none;
+    box-shadow: none;
+    color: var(--text);
+    font-family: 'Gaegu', cursive;
+    font-size: 34px;
+    font-weight: 700;
+    padding: 8px 0 0;
+  }
+  .notebook-card {
+    width: 100%;
+    max-width: 560px;
+    position: relative;
+    padding: 28px 28px 28px 56px;
+    background-color: #fffdf6;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 27px,
+      rgba(0, 0, 0, 0.07) 28px
+    );
+    background-position: 0 6px;
+  }
+  .notebook-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 40px;
+    width: 2px;
+    background: var(--pink-soft);
+  }
+  .notebook-write {
+    position: relative;
+  }
+  .notebook-pencil {
+    position: absolute;
+    top: -6px;
+    right: 0;
+    font-size: 26px;
+    transform: rotate(25deg);
+    pointer-events: none;
+  }
+  .notebook-textarea {
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Gaegu', cursive;
+    font-size: 18px;
+    line-height: 28px;
+    padding: 0;
+    margin: 4px 0 16px;
+  }
+  .notebook-textarea:focus {
+    outline: none;
+  }
+  .notebook-textarea::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .mindset-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .mindset-empty {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 8px 0 16px;
+  }
+  .mindset-item {
+    position: relative;
+    padding: 6px 36px 20px 4px;
+  }
+  .mindset-item-date {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .pinned-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--peach-soft);
+    color: var(--peach-text);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .mindset-item-text {
+    font-family: 'Gaegu', cursive;
+    font-size: 18px;
+    line-height: 28px;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .mindset-pin {
+    display: inline-block;
+    margin-top: 4px;
+    background: transparent;
+    border: none;
+    color: var(--peach-text);
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+  }
+  .mindset-pin:hover {
+    text-decoration: underline;
+  }
+  .mindset-pin:disabled {
+    color: var(--muted);
+    cursor: default;
+    text-decoration: none;
+  }
+  .mindset-del {
+    position: absolute;
+    top: 24px;
+    right: 0;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 999px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .mindset-del:hover {
+    color: var(--danger-text);
+    background: var(--danger-soft);
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <a class="home-link" href="index.html" data-nav>← 홈으로</a>
+    <h1 class="page-title">✏️ 마음가짐 기록장</h1>
+
+    <div class="panel notebook-card">
+      <div class="notebook-write">
+        <div class="notebook-pencil">✏️</div>
+        <label for="newEntryInput">오늘의 마음가짐을 적어보세요</label>
+        <textarea id="newEntryInput" class="notebook-textarea" placeholder="오늘 하루, 나에게 해주고 싶은 말을 적어보세요"></textarea>
+        <button type="button" class="secondary" onclick="addMindsetEntry()">저장하기</button>
+      </div>
+    </div>
+
+    <div class="panel notebook-card">
+      <h2 class="card-title">지난 기록</h2>
+      <div class="mindset-list" id="mindsetList"></div>
+    </div>
+  </div>
+
+<script>
+function renderMindsetList() {
+  const entries = loadMindsetLog();
+  const list = document.getElementById('mindsetList');
+  list.innerHTML = '';
+
+  if (entries.length === 0) {
+    list.innerHTML = '<p class="mindset-empty">아직 기록된 마음가짐이 없어요.</p>';
+    return;
+  }
+
+  const pinnedId = getPinnedMindsetId();
+
+  entries.forEach(entry => {
+    const isPinned = pinnedId != null && String(entry.id) === pinnedId;
+    const item = document.createElement('div');
+    item.className = 'mindset-item';
+    item.innerHTML = `
+      <div class="mindset-item-date">${entry.dateIso ? formatDateLabel(entry.dateIso) : ''}${isPinned ? '<span class="pinned-badge">오늘의 마음가짐</span>' : ''}</div>
+      <div class="mindset-item-text"></div>
+      <button class="mindset-pin" ${isPinned ? 'disabled' : ''}>${isPinned ? '오늘의 마음가짐이에요' : '오늘의 마음가짐으로 삼기'}</button>
+      <button class="mindset-del" title="삭제">&times;</button>
+    `;
+    item.querySelector('.mindset-item-text').textContent = entry.text;
+    if (!isPinned) {
+      item.querySelector('.mindset-pin').addEventListener('click', () => pinMindsetEntry(entry.id));
+    }
+    item.querySelector('.mindset-del').addEventListener('click', () => deleteMindsetEntry(entry.id));
+    list.appendChild(item);
+  });
+}
+
+function pinMindsetEntry(id) {
+  setPinnedMindsetId(id);
+  navigateTo('index.html');
+}
+
+function addMindsetEntry() {
+  const textarea = document.getElementById('newEntryInput');
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  const entries = loadMindsetLog();
+  entries.unshift({ id: new Date().getTime(), dateIso: todayIso(), text });
+  saveMindsetLog(entries);
+  localStorage.removeItem(LEGACY_QUOTE_KEY);
+
+  textarea.value = '';
+  renderMindsetList();
+}
+
+function deleteMindsetEntry(id) {
+  const entries = loadMindsetLog().filter(e => e.id !== id);
+  saveMindsetLog(entries);
+  if (getPinnedMindsetId() === String(id)) clearPinnedMindsetId();
+  renderMindsetList();
+}
+
+renderMindsetList();
+</script>
+</body>
+</html>

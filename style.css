@@ -1,0 +1,182 @@
+:root {
+  color-scheme: light;
+  --bg: #fffcfd;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #7c8598;
+  --muted-strong: #475569;
+  --border: #f5eef4;
+  --danger: #ff96ab;
+  --danger-soft: #fff0f3;
+  --danger-text: #e11d48;
+
+  --pink: #ff96cc;
+  --pink-soft: #fff1f9;
+  --pink-text: #db2777;
+  --mint: #6bddba;
+  --mint-soft: #eafdf7;
+  --peach: #ffb48f;
+  --peach-soft: #fff3ec;
+  --peach-text: #c2410c;
+  --blue: #93cbff;
+  --blue-soft: #f0f8ff;
+  --blue-text: #2563eb;
+
+  --accent: var(--pink);
+  --accent-soft: var(--pink-soft);
+  --candy-gradient: linear-gradient(120deg, var(--pink) 0%, var(--peach) 55%, var(--blue) 100%);
+  --button-gradient: linear-gradient(120deg, var(--pink), var(--blue));
+  --button-shadow: rgba(147, 150, 224, 0.55);
+}
+* { box-sizing: border-box; }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+  padding: 24px;
+  animation: pageFadeIn 0.35s ease both;
+}
+body.page-leaving {
+  animation: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.page {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.home-link {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: -8px;
+  transition: color 0.2s ease;
+}
+.home-link:hover {
+  color: var(--pink-text);
+}
+.page-title {
+  width: 100%;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+  color: var(--text);
+  background: var(--candy-gradient);
+  padding: 22px 24px;
+  border-radius: 28px;
+  box-shadow: 0 20px 40px -20px rgba(255, 150, 204, 0.5);
+}
+.panel {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px -32px rgba(255, 150, 204, 0.3);
+}
+.card {
+  padding: 28px 40px;
+}
+.card-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  text-align: center;
+  color: var(--text);
+}
+p.sub {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+input[type="time"],
+input[type="number"],
+input[type="text"],
+input[type="date"] {
+  width: 100%;
+  font-size: 16px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: #fffdfe;
+  color: var(--text);
+  margin-bottom: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input[type="time"] {
+  font-size: 18px;
+  font-weight: 600;
+}
+input:focus {
+  outline: none;
+  border-color: var(--pink);
+  box-shadow: 0 0 0 4px var(--pink-soft);
+}
+.row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.row > div { flex: 1; }
+.secondary {
+  width: 100%;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--button-gradient);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  text-decoration: none;
+  display: block;
+  text-align: center;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+.secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -12px var(--button-shadow);
+}
+.secondary:active {
+  transform: translateY(0) scale(0.98);
+}
+.result {
+  margin-top: 4px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.result .time {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--pink-text);
+  letter-spacing: 0.3px;
+}
+.result .note {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>업무 내용 관리 - 오늘의 인턴 다이어리</title>
+<link rel="stylesheet" href="style.css">
+<script src="diary.js"></script>
+<script src="transition.js" defer></script>
+<style>
+  .worklog-card {
+    width: 100%;
+    max-width: 560px;
+  }
+  .diary-textarea {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    font-size: 15px;
+    line-height: 1.5;
+    font-family: inherit;
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1.5px solid var(--border);
+    background: #fffdfe;
+    color: var(--text);
+    margin-bottom: 18px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .diary-textarea:focus {
+    outline: none;
+    border-color: var(--peach);
+    box-shadow: 0 0 0 4px var(--peach-soft);
+  }
+  .worklog-history {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .worklog-empty {
+    color: var(--muted);
+    font-size: 14px;
+    padding: 4px 0 12px;
+  }
+  .worklog-history-item {
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+  .worklog-history-date {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--peach-text);
+    margin-bottom: 8px;
+  }
+  .worklog-history-tasks {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .worklog-history-tasks li {
+    font-size: 14px;
+    color: var(--text);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.4;
+  }
+  .worklog-history-tasks li::before {
+    content: '•';
+    position: absolute;
+    left: 2px;
+    color: var(--peach-text);
+  }
+  .worklog-history-extra {
+    font-size: 13px;
+    color: var(--muted-strong);
+    margin-top: 4px;
+  }
+  .worklog-history-extra b {
+    color: var(--text);
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <a class="home-link" href="index.html" data-nav>← 홈으로</a>
+    <h1 class="page-title">오늘의 업무 기록</h1>
+
+    <div class="panel card worklog-card">
+      <h2 class="card-title">업무 내용 관리</h2>
+      <p class="sub">오늘 하루 있었던 일을 남겨보세요</p>
+
+      <label for="tasksInput">오늘 한 업무</label>
+      <textarea id="tasksInput" class="diary-textarea" placeholder="예: 경쟁사 리서치&#10;미팅 참석&#10;PPT 수정"></textarea>
+
+      <label for="learningsInput">배운 점</label>
+      <textarea id="learningsInput" class="diary-textarea"></textarea>
+
+      <label for="memoInput">메모</label>
+      <textarea id="memoInput" class="diary-textarea"></textarea>
+
+      <button type="button" class="secondary" onclick="saveWorklog()">저장하기</button>
+    </div>
+
+    <div class="panel card worklog-card">
+      <h2 class="card-title">지난 기록</h2>
+      <div class="worklog-history" id="worklogHistory"></div>
+    </div>
+  </div>
+
+<script>
+function loadWorklogInputs() {
+  const entry = getTodayEntry();
+  document.getElementById('tasksInput').value = (entry && entry.tasks) || '';
+  document.getElementById('learningsInput').value = (entry && entry.learnings) || '';
+  document.getElementById('memoInput').value = (entry && entry.memo) || '';
+}
+
+function saveWorklog() {
+  const diary = loadDiary();
+  const dateIso = todayIso();
+  diary[dateIso] = {
+    ...diary[dateIso],
+    tasks: document.getElementById('tasksInput').value,
+    learnings: document.getElementById('learningsInput').value,
+    memo: document.getElementById('memoInput').value,
+  };
+  saveDiary(diary);
+  navigateTo('index.html');
+}
+
+function renderWorklogHistory() {
+  const diary = loadDiary();
+  const dates = Object.keys(diary)
+    .filter(dateIso => diary[dateIso].tasks)
+    .sort((a, b) => b.localeCompare(a));
+
+  const container = document.getElementById('worklogHistory');
+  container.innerHTML = '';
+
+  if (dates.length === 0) {
+    container.innerHTML = '<p class="worklog-empty">아직 기록된 업무 내용이 없어요.</p>';
+    return;
+  }
+
+  dates.forEach(dateIso => {
+    const entry = diary[dateIso];
+    const taskLines = entry.tasks.split('\n').map(l => l.trim()).filter(Boolean);
+    const taskHtml = taskLines.map(l => `<li>${escapeHtml(l)}</li>`).join('');
+
+    const item = document.createElement('div');
+    item.className = 'worklog-history-item';
+    item.innerHTML = `
+      <div class="worklog-history-date">${formatDateLabel(dateIso)}</div>
+      <ul class="worklog-history-tasks">${taskHtml}</ul>
+      ${entry.learnings ? `<div class="worklog-history-extra"><b>배운 점</b>${escapeHtml(entry.learnings)}</div>` : ''}
+      ${entry.memo ? `<div class="worklog-history-extra"><b>메모</b>${escapeHtml(entry.memo)}</div>` : ''}
+    `;
+    container.appendChild(item);
+  });
+}
+
+loadWorklogInputs();
+renderWorklogHistory();
+</script>
+</body>
+</html>

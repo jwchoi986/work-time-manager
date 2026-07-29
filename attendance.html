@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출퇴근 관리 - 오늘의 인턴 다이어리</title>
+<link rel="stylesheet" href="style.css">
+<script src="diary.js"></script>
+<script src="transition.js" defer></script>
+<style>
+  .layout {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .layout .card {
+    flex: 1;
+    min-width: 0;
+  }
+  .history {
+    width: 240px;
+    flex-shrink: 0;
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .history h2 {
+    font-size: 16px;
+    margin: 0 0 2px;
+    text-align: center;
+  }
+  .history .sub {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+  .history-list {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .history-empty {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px 0;
+  }
+  .history-item {
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .history-item:hover {
+    border-color: var(--pink-soft);
+    transform: translateY(-1px);
+  }
+  .history-item .info .date {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .history-item .info .times {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .history-item .info .times .arrow {
+    color: var(--muted);
+    font-weight: 400;
+    margin: 0 4px;
+  }
+  .history-item .del {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 999px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .history-item .del:hover {
+    color: var(--danger-text);
+    background: var(--danger-soft);
+  }
+  .history-item.editing {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .history-item.editing input[type="date"],
+  .history-item.editing input[type="time"],
+  .add-form input[type="date"],
+  .add-form input[type="time"] {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: #fffdfe;
+    color: var(--text);
+  }
+  .add-form {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1.5px dashed var(--pink-soft);
+    border-radius: 18px;
+    background: #fffafd;
+  }
+  .add-form.show { display: flex; }
+  .add-form-title {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .add-form button {
+    padding: 10px;
+    border: none;
+    border-radius: 999px;
+    background: var(--button-gradient);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  }
+  .add-form button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -10px var(--button-shadow);
+  }
+  .edit-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 999px;
+    background: var(--button-gradient);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  }
+  .edit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -10px var(--button-shadow);
+  }
+  .edit-btn.active {
+    box-shadow: inset 0 0 0 2px rgba(30, 41, 59, 0.18);
+  }
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+    margin: 12px 0 0;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--pink), var(--peach));
+    transition: width 0.6s ease;
+  }
+  @media (max-width: 720px) {
+    .layout { flex-direction: column; }
+    .history { width: 100%; height: 300px; }
+    .layout .card {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .time-row {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <a class="home-link" href="index.html" data-nav>← 홈으로</a>
+    <h1 class="page-title">출퇴근 관리</h1>
+    <div class="layout">
+      <div class="panel history">
+        <h2>출퇴근 기록</h2>
+        <p class="sub">지금까지 저장한 출근-퇴근 기록이에요</p>
+        <div class="history-list" id="historyList"></div>
+        <div class="add-form" id="addForm">
+          <div class="add-form-title">지난 기록 추가하기</div>
+          <input type="date" id="addDate">
+          <div class="edit-row">
+            <input type="time" id="addClockIn">
+            <input type="time" id="addClockOut">
+          </div>
+          <button type="button" onclick="addRecord()">추가하기</button>
+        </div>
+        <button class="edit-btn" id="editBtn" onclick="toggleEditMode()">기록 수정</button>
+      </div>
+
+      <div class="panel card">
+        <h2 class="card-title">퇴근까지 남은 시간</h2>
+
+      <div class="result" id="result">
+        <div class="time" id="countdown">-</div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="note" id="countdownNote"></div>
+      </div>
+
+      <div class="row time-row">
+        <div>
+          <label for="clockIn">출근시간</label>
+          <input type="time" id="clockIn" value="09:00">
+        </div>
+        <div>
+          <label for="clockOut">퇴근시간</label>
+          <input type="time" id="clockOut" value="18:00">
+        </div>
+      </div>
+
+        <button type="button" class="secondary" id="saveBtn" onclick="saveRecord()">이 기록 저장하기</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const DEFAULT_WORK_HOURS = 8;
+const DEFAULT_BREAK_MINUTES = 60;
+
+function recalcClockOut() {
+  const clockIn = document.getElementById('clockIn').value;
+  if (!clockIn) return;
+  const totalMinutes = timeToMinutes(clockIn) + DEFAULT_WORK_HOURS * 60 + DEFAULT_BREAK_MINUTES;
+  document.getElementById('clockOut').value = minutesToTime(totalMinutes);
+  updateCountdown();
+}
+
+function getClockOutTarget() {
+  const clockIn = document.getElementById('clockIn').value;
+  const clockOut = document.getElementById('clockOut').value;
+  if (!clockIn || !clockOut) return null;
+
+  const inMinutes = timeToMinutes(clockIn);
+  const outMinutes = timeToMinutes(clockOut);
+  const nextDay = outMinutes <= inMinutes;
+
+  const now = new Date();
+  const [outH, outM] = clockOut.split(':').map(Number);
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), outH, outM, 0, 0);
+  if (nextDay) target.setDate(target.getDate() + 1);
+
+  return { target, nextDay, clockOut };
+}
+
+function updateCountdown() {
+  const info = getClockOutTarget();
+  const timeEl = document.getElementById('countdown');
+  const noteEl = document.getElementById('countdownNote');
+  const fillEl = document.getElementById('progressFill');
+  const clockIn = document.getElementById('clockIn').value;
+
+  if (!info || !clockIn) {
+    timeEl.textContent = '-';
+    noteEl.textContent = '출근시간과 퇴근시간을 입력해 주세요';
+    fillEl.style.width = '0%';
+    return;
+  }
+
+  const { target, nextDay, clockOut } = info;
+  const now = new Date();
+  const diffMs = target - now;
+
+  if (diffMs <= 0) {
+    const overdueMinutes = Math.floor(-diffMs / 60000);
+    timeEl.textContent = overdueMinutes >= 5 ? `퇴근시간이 ${overdueMinutes}분 지났습니다` : '🎉 퇴근 시간이에요!';
+  } else {
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hh = Math.floor(totalSeconds / 3600);
+    const mm = Math.floor((totalSeconds % 3600) / 60);
+    timeEl.textContent = hh === 0 ? `${mm}분 남음` : `${hh}시간 ${mm}분 남음`;
+  }
+  noteEl.textContent = `퇴근시간 ${clockOut}${nextDay ? ' (다음날)' : ''} 기준`;
+
+  const [inH, inM] = clockIn.split(':').map(Number);
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), inH, inM, 0, 0);
+  const totalMs = target - start;
+  const elapsedMs = now - start;
+  const percent = totalMs > 0 ? Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100)) : 100;
+  fillEl.style.width = percent + '%';
+}
+
+function saveRecord() {
+  const clockIn = document.getElementById('clockIn').value;
+  const info = getClockOutTarget();
+  if (!clockIn || !info) return;
+
+  const diary = loadDiary();
+  const dateIso = todayIso();
+  diary[dateIso] = { ...diary[dateIso], clockIn, clockOut: info.clockOut, nextDay: info.nextDay };
+  saveDiary(diary);
+  renderHistory();
+}
+
+function deleteRecord(dateIso) {
+  const diary = loadDiary();
+  const entry = diary[dateIso];
+  if (!entry) return;
+
+  delete entry.clockIn;
+  delete entry.clockOut;
+  delete entry.nextDay;
+  if (entry.tasks || entry.learnings || entry.memo) {
+    diary[dateIso] = entry;
+  } else {
+    delete diary[dateIso];
+  }
+  saveDiary(diary);
+  renderHistory();
+}
+
+function addRecord() {
+  const dateIso = document.getElementById('addDate').value;
+  const clockIn = document.getElementById('addClockIn').value;
+  const clockOut = document.getElementById('addClockOut').value;
+  if (!dateIso || !clockIn || !clockOut) return;
+
+  const diary = loadDiary();
+  diary[dateIso] = {
+    ...diary[dateIso],
+    clockIn,
+    clockOut,
+    nextDay: timeToMinutes(clockOut) <= timeToMinutes(clockIn),
+  };
+  saveDiary(diary);
+
+  document.getElementById('addDate').value = '';
+  document.getElementById('addClockIn').value = '';
+  document.getElementById('addClockOut').value = '';
+  renderHistory();
+}
+
+function updateAttendanceField(dateIso, field, value) {
+  const diary = loadDiary();
+  const entry = diary[dateIso] || {};
+  entry[field] = value;
+  if (entry.clockIn && entry.clockOut) {
+    entry.nextDay = timeToMinutes(entry.clockOut) <= timeToMinutes(entry.clockIn);
+  }
+  diary[dateIso] = entry;
+  saveDiary(diary);
+}
+
+function updateRecordDate(oldDateIso, newDateIso) {
+  if (!newDateIso || oldDateIso === newDateIso) return;
+
+  const diary = loadDiary();
+  const oldEntry = diary[oldDateIso];
+  if (!oldEntry) return;
+
+  const { clockIn, clockOut, nextDay } = oldEntry;
+  diary[newDateIso] = { ...diary[newDateIso], clockIn, clockOut, nextDay };
+
+  delete oldEntry.clockIn;
+  delete oldEntry.clockOut;
+  delete oldEntry.nextDay;
+  if (oldEntry.tasks || oldEntry.learnings || oldEntry.memo) {
+    diary[oldDateIso] = oldEntry;
+  } else {
+    delete diary[oldDateIso];
+  }
+
+  saveDiary(diary);
+  renderHistory();
+}
+
+let editMode = false;
+
+function toggleEditMode() {
+  editMode = !editMode;
+  document.getElementById('editBtn').textContent = editMode ? '수정 완료' : '기록 수정';
+  document.getElementById('editBtn').classList.toggle('active', editMode);
+  document.getElementById('addForm').classList.toggle('show', editMode);
+  if (editMode) document.getElementById('addDate').value = todayIso();
+  renderHistory();
+}
+
+function renderHistory() {
+  const diary = loadDiary();
+  const dates = Object.keys(diary)
+    .filter(dateIso => diary[dateIso].clockIn && diary[dateIso].clockOut)
+    .sort((a, b) => b.localeCompare(a));
+
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+
+  if (dates.length === 0) {
+    list.innerHTML = '<div class="history-empty">아직 저장된 기록이 없어요</div>';
+    return;
+  }
+
+  dates.forEach(dateIso => {
+    const r = diary[dateIso];
+    const item = document.createElement('div');
+
+    if (editMode) {
+      item.className = 'history-item editing';
+      item.innerHTML = `
+        <div class="edit-row">
+          <input type="date" class="edit-date" value="${dateIso}">
+          <button class="del" title="삭제">&times;</button>
+        </div>
+        <div class="edit-row">
+          <input type="time" class="edit-in" value="${r.clockIn}">
+          <input type="time" class="edit-out" value="${r.clockOut}">
+        </div>
+      `;
+      item.querySelector('.edit-date').addEventListener('change', e => updateRecordDate(dateIso, e.target.value));
+      item.querySelector('.edit-in').addEventListener('change', e => updateAttendanceField(dateIso, 'clockIn', e.target.value));
+      item.querySelector('.edit-out').addEventListener('change', e => updateAttendanceField(dateIso, 'clockOut', e.target.value));
+    } else {
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="info">
+          <div class="date">${formatDateLabel(dateIso)}</div>
+          <div class="times">${r.clockIn}<span class="arrow">→</span>${r.clockOut}${r.nextDay ? ' (다음날)' : ''}</div>
+        </div>
+        <button class="del" title="삭제">&times;</button>
+      `;
+    }
+    item.querySelector('.del').addEventListener('click', () => deleteRecord(dateIso));
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('clockIn').addEventListener('change', () => { recalcClockOut(); });
+document.getElementById('clockOut').addEventListener('change', updateCountdown);
+
+function syncHistoryHeight() {
+  const card = document.querySelector('.layout .card');
+  const history = document.querySelector('.history');
+  if (window.innerWidth <= 720) {
+    history.style.height = '';
+    return;
+  }
+  history.style.height = card.offsetHeight + 'px';
+}
+
+new ResizeObserver(syncHistoryHeight).observe(document.querySelector('.layout .card'));
+window.addEventListener('resize', syncHistoryHeight);
+
+function initTodayInputs() {
+  const today = getTodayEntry();
+  if (today && today.clockIn) document.getElementById('clockIn').value = today.clockIn;
+  if (today && today.clockOut) document.getElementById('clockOut').value = today.clockOut;
+}
+
+initTodayInputs();
+updateCountdown();
+setInterval(updateCountdown, 1000);
+renderHistory();
+syncHistoryHeight();
+</script>
+</body>
+</html>
